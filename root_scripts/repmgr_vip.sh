@@ -24,7 +24,7 @@ fi
 }
 
 write_history_log() {
-dt=`date "+%a %d %b %Y %H:%M:%S"`
+dt=$(date "+%a %d %b %Y %H:%M:%S")
 $echoe "$dt ${my_pid}\t: $1" >>${history_log}
 }
 
@@ -64,7 +64,7 @@ touch $log_main
 touch $history_log
 chown postgres:postgres $log_main
 chown postgres:postgres $history_log
-#DBNAME=`echo ${DBNAME} |tr '[a-z]' '[A-Z]'`
+
 }
 
 validate_ipaddr() {
@@ -121,7 +121,7 @@ case $value in
 c) configfile=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 d) device=$(echo "$OPTARG" |tr '[A-Z]' '[a-z]') ;;
 o) operation=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
-i) primmaryvip=$(echo "$OPTARG") ;;
+i) primaryvip=$(echo "$OPTARG") ;;
 m) netmask=$(echo "$OPTARG") ;;
 n) node=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 v) verbose=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
@@ -175,16 +175,16 @@ if [ "$device" = "" ]; then
 else
   write_log "Using argument value Network device name $device."
 fi 
-if [ "$primmaryvip" = "" ]; then
+if [ "$primaryvip" = "" ]; then
   grep -i "^PRIMARYVIP" ${configfile} >/dev/null
   rc=$?
   if [ $rc = 0 ]; then
-     primmaryvip=$(grep -i "^PRIMARYVIP"  ${configfile} |cut -f2 -d= |tr -d '"' | awk ' { print $1 }')
+     primaryvip=$(grep -i "^PRIMARYVIP"  ${configfile} |cut -f2 -d= |tr -d '"' | awk ' { print $1 }')
    else
     abort 15 "Error - You didn't specify a ip address [VIP] in either command arguments or config file!"
    fi
 fi
-write_log "Using ip address $primmaryvip."
+write_log "Using ip address $primaryvip."
 if [ "$netmask" = "" ]; then
   grep -i "^NETMASK" ${configfile} >/dev/null
   rc=$?
@@ -211,21 +211,21 @@ write_log "Operation $operation specified. "
 case $operation in
 
 ADD)  
-   write_log "Adding $primmaryvip to device $device."
-   ifconfig ${device} inet ${primmaryvip} netmask 255.255.255.0 
+   write_log "Adding $primaryvip to device $device."
+   ifconfig ${device} inet ${primaryvip} netmask 255.255.255.0 
    ;;
 DELETE)
-   write_log "Delete $primmaryvip from device $device."
-   ifconfig ${shortdevice} del ${primmaryvip}
+   write_log "Delete $primaryvip from device $device."
+   ifconfig ${shortdevice} del ${primaryvip}
    ;;
 REFRESH)
-   write_log "Delete $primmaryvip from device $device."
-   ifconfig ${shortdevice} del ${primmaryvip} 
-   write_log "Adding $primmaryvip to device $device."
-   ifconfig ${device} inet ${primmaryvip}  netmask 255.255.255.0 
+   write_log "Delete $primaryvip from device $device."
+   ifconfig ${shortdevice} del ${primaryvip} 
+   write_log "Adding $primaryvip to device $device."
+   ifconfig ${device} inet ${primaryvip}  netmask 255.255.255.0 
    ;;
 VALIDATE)
-   validate_ipaddr ${device} ${primmaryvip}
+   validate_ipaddr ${device} ${primaryvip}
    returncode=$?
    ;;
 *) abort 12 "Error - Invalid operation $operation specified!" 
