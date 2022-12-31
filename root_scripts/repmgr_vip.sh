@@ -18,7 +18,7 @@ exit 99
 write_log() {
 dt=$(date +%Y-%m-%d-%H-%M.%S)
 $echoe "$dt - ${my_pid}\t-$1" >> ${log_main}
-if [ $verbose = 'Y' ];  then
+if [ "$verbose" = 'Y' ];  then
   $echoe "$dt - ${my_pid}\t-$1"
 fi
 }
@@ -67,6 +67,27 @@ chown postgres:postgres $history_log
 
 }
 
+validate_netmask () {
+    local n_masks=(${1//./ })
+    [ "${#n_masks[@]}" -ne 4 ] && return 1
+    for i in ${1//./ }; do
+        bits=$(echo "obase=2;ibase=10;$i" | bc)
+        pre=$((8-${#bits}))
+        if [ "$bits" = 0 ]; then
+            zeros=00000000
+        elif [ "$pre" -gt 0 ]; then
+            zeros=$(for ((i=1;i<=$pre;i++)); do echo -n 0; done)
+        fi
+        b_mask=$b_mask$zeros$bits
+            unset zeros
+    done
+    if [ $b_mask = ${b_mask%%0*}${b_mask##*1} ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 validate_ipaddr() {
  local ldevice=$1
  local lipaddr=$2
@@ -74,10 +95,10 @@ validate_ipaddr() {
  ifconfig ${ldevice}| grep -i ${lipaddr} >/dev/null
  rc=$?
  if [ $rc = 0 ] ; then
-    echo "IP ${primmaryvip} is up."
+   # echo "IP ${primmaryvip} is up."
     myreturn=0
  else
-    echo "IP ${primmaryvip} is down."
+   # echo "IP ${primmaryvip} is down."
     myreturn=1
  fi
  return ${myreturn}
@@ -86,6 +107,10 @@ validate_ipaddr() {
 
 add_ipaddr() {
 local myreturn=0
+local ldevice=$1
+local lipaddr=$2
+write_log "Adding ${lipaddr} to device ${ldevice}."
+ifconfig ${ldevice} inet ${lipaddr} netmask 255.255.255.0
 return $myreturn
 
 }
@@ -93,7 +118,11 @@ return $myreturn
 del_ipaddr() {
 
  local myreturn=0
-return $myreturn
+ local ldevice=$1
+ local lipaddr=$2
+ write_log "Delete ${lipaddr} from device ${ldevice}."
+ ifconfig ${ldevice} del ${lipaddr}
+ return $myreturn
 
 }
 
@@ -139,9 +168,10 @@ case $verbose in
     ;;
 esac
 
-
-
 generic_vars
+
+
+
 
 
 if [ "$configfile" = "" ]; then
@@ -167,7 +197,7 @@ if [ "$device" = "" ]; then
   grep -i "^DEVICE" ${configfile} >/dev/null
   rc=$?
   if [ $rc = 0 ]; then
-      device=$(grep -i "^DEVICE" ${configfile}  |cut -f2 -d= |tr -d '"' | awk ' { print $1 }')
+      device=$(grep -i "^DEVICE" ${configfile} |cut -f2 -d= |tr -d '"' | awk ' { print $1 }')
   else
      abort 14 "Error - You didn't specify a ethernet device in either command arguments or config file! "
   fi
@@ -178,11 +208,16 @@ fi
 if [ "$primaryvip" = "" ]; then
   grep -i "^PRIMARYVIP" ${configfile} >/dev/null
   rc=$?
-  if [ $rc = 0 ]; then
-     primaryvip=$(grep -i "^PRIMARYVIP"  ${configfile} |cut -f2 -d= |tr -d '"' | awk ' { print $1 }')
+  if [ ${rc} = 0 ]; then
+     primaryvip=$(grep -i "^PRIMARYVIP" ${configfile} |cut -f2 -d= |tr -d '"' | awk ' { print $1 }')
    else
     abort 15 "Error - You didn't specify a ip address [VIP] in either command arguments or config file!"
    fi
+fi
+echo ${primaryvip} | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}" >/dev/null
+rc=$?
+if [ ${rc} != 1 ]; then 
+   abort 21 "Error - Invalid argumnet ${primaryvip} specified!"
 fi
 write_log "Using ip address $primaryvip."
 if [ "$netmask" = "" ]; then
@@ -193,6 +228,11 @@ if [ $rc = 0 ]; then
 else
   abort 16 "Error - You didn't specify a net mask in either command arguments or config file!"
 fi
+fi
+validate_netmask $netmask
+rc=$?
+if [ ${rc} != 1 ]; then 
+   abort 22 "Error - Invalid argumnet ${netmask} specified!"
 fi
 write_log "Using netmask $netmask."
 
@@ -211,22 +251,39 @@ write_log "Operation $operation specified. "
 case $operation in
 
 ADD)  
-   write_log "Adding $primaryvip to device $device."
-   ifconfig ${device} inet ${primaryvip} netmask 255.255.255.0 
+   validate_ipaddr ${device} ${primaryvip}
+   returncode=$?
+   if [ ${returncode} = 1 ]; then
+     add_ipaddr ${device} ${primaryvip}
+     returncode=$?
+   else
+     abort 20 "Unexpected Error - ${primaryvip} is already defined @ ${device} "
+   fi
    ;;
 DELETE)
-   write_log "Delete $primaryvip from device $device."
-   ifconfig ${shortdevice} del ${primaryvip}
+   del_ipaddr ${shortdevice} ${primaryvip}
    ;;
 REFRESH)
    write_log "Delete $primaryvip from device $device."
-   ifconfig ${shortdevice} del ${primaryvip} 
-   write_log "Adding $primaryvip to device $device."
-   ifconfig ${device} inet ${primaryvip}  netmask 255.255.255.0 
+   del_ipaddr ${shortdevice} ${primaryvip}
+   validate_ipaddr ${device} ${primaryvip}
+   returncode=$?
+   if [ ${returncode} = 1 ]; then
+     write_log "Adding $primaryvip to device $device."
+     add_ipaddr ${device} ${primaryvip}
+     returncode=$?
+   else
+     abort 20 "Unexpected Error - ${primaryvip} is already defined @ ${device} "
+   fi
    ;;
 VALIDATE)
    validate_ipaddr ${device} ${primaryvip}
    returncode=$?
+   if [ ${returncode} = 0 ]; then
+    echo "IP ${primaryvip} is up."
+   else
+    echo "IP ${primaryvip} is down."
+   fi
    ;;
 *) abort 12 "Error - Invalid operation $operation specified!" 
    ;;
