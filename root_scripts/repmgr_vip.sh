@@ -7,7 +7,7 @@
   
 # Used by EDB repmgr  to assign vips to Network Devices
 #
-# Version : 0.2 - Partly tested 
+# Version : 0.1 
 
 usage() {
 
@@ -275,9 +275,9 @@ VALIDATE)
    validate_ipaddr ${device} ${primaryvip}
    returncode=$?
    if [ ${returncode} = 0 ]; then
-    echo "IP ${primaryvip} is up."
+    echo "Script ${script_full} reports IP ${primaryvip} is up."
    else
-    echo "IP ${primaryvip} is down."
+    echo "Script ${script_full} reports IP ${primaryvip} is down."
    fi
    ;;
 *) abort 12 "Error - Invalid operation $operation specified!" 
