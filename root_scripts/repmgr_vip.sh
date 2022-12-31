@@ -7,7 +7,7 @@
   
 # Used by EDB repmgr  to assign vips to Network Devices
 #
-# Version : 0.1 
+# Version : 0.2 - Partly tested 
 
 usage() {
 
@@ -214,10 +214,8 @@ if [ "$primaryvip" = "" ]; then
     abort 15 "Error - You didn't specify a ip address [VIP] in either command arguments or config file!"
    fi
 fi
-echo ${primaryvip} | grep -E -o "([0-9]{1,3}[\.]){3}[0-9]{1,3}" >/dev/null
-rc=$?
-if [ ${rc} != 1 ]; then 
-   abort 21 "Error - Invalid argumnet ${primaryvip} specified!"
+if [[ ! "$primaryvip" =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
+   abort 21 "Error - Invalid argument ${primaryvip} specified!"
 fi
 write_log "Using ip address $primaryvip."
 if [ "$netmask" = "" ]; then
@@ -228,11 +226,6 @@ if [ $rc = 0 ]; then
 else
   abort 16 "Error - You didn't specify a net mask in either command arguments or config file!"
 fi
-fi
-validate_netmask $netmask
-rc=$?
-if [ ${rc} != 1 ]; then 
-   abort 22 "Error - Invalid argumnet ${netmask} specified!"
 fi
 write_log "Using netmask $netmask."
 
@@ -259,6 +252,8 @@ ADD)
    else
      abort 20 "Unexpected Error - ${primaryvip} is already defined @ ${device} "
    fi
+   validate_ipaddr ${device} ${primaryvip}
+   returncode=$?
    ;;
 DELETE)
    del_ipaddr ${shortdevice} ${primaryvip}
