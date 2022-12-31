@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #set -x
 #
 # repmgr_vip.sh
@@ -7,10 +7,11 @@
   
 # Used by EDB repmgr  to assign vips to Network Devices
 #
-# Version : 0.1 
+# Version : 0.2 
 
 usage() {
-
+echo "Usage:" 
+echo "${script_full} -o add/delete/validate/refresh [-v] n|y {-d device} {-c config file} {-n repmgr node id} {-m netmask} {-ip vip}" 
 exit 99
 }
 
