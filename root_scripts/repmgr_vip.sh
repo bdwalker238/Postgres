@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+  #!/usr/bin/env bash
 #set -x
 #
 # repmgr_vip.sh
@@ -9,33 +9,6 @@
 #
 # Version : 0.2 
 
-usage() {
-echo "Usage:" 
-echo "${script_full} -o add/delete/validate/refresh [-v] n|y {-d device} {-c config file} {-n repmgr node id} {-m netmask} {-ip vip}" 
-exit 99
-}
-
-
-write_log() {
-dt=$(date +%Y-%m-%d-%H-%M.%S)
-$echoe "$dt - ${my_pid}\t-$1" >> ${log_main}
-if [ "$verbose" = 'Y' ];  then
-  $echoe "$dt - ${my_pid}\t-$1"
-fi
-}
-
-write_history_log() {
-dt=$(date "+%a %d %b %Y %H:%M:%S")
-$echoe "$dt ${my_pid}\t: $1" >>${history_log}
-}
-
-abort() {
-   write_log "$2"
-   write_log "${script_name} ended abnormally"
-   write_history_log "${script_full} for instance ${inst} - ended abbormally"
-   echo $2
-   exit $1
-}
 
 generic_vars() {
 my_pid=$$
@@ -65,8 +38,37 @@ touch $log_main
 touch $history_log
 chown postgres:postgres $log_main
 chown postgres:postgres $history_log
-
 }
+
+usage() {
+echo "Usage:" 
+echo "${script_full} -o add/delete/validate/refresh [-v] n|y {-d device} {-c config file} {-n repmgr node id} {-m netmask} {-ip vip}" 
+exit 99
+}
+
+
+write_log() {
+dt=$(date +%Y-%m-%d-%H-%M.%S)
+$echoe "$dt - ${my_pid}\t-$1" >> ${log_main}
+if [ "$verbose" = 'Y' ];  then
+  $echoe "$dt - ${my_pid}\t-$1"
+fi
+}
+
+write_history_log() {
+dt=$(date "+%a %d %b %Y %H:%M:%S")
+$echoe "$dt ${my_pid}\t: $1" >>${history_log}
+}
+
+abort() {
+   write_log "$2"
+   write_log "${script_name} ended abnormally"
+   write_history_log "${script_full} for instance ${inst} - ended abbormally"
+   echo $2
+   exit $1
+}
+
+
 
 validate_netmask () {
     local n_masks=(${1//./ })
