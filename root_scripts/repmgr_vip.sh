@@ -1,4 +1,4 @@
-  #!/usr/bin/env bash
+#!/usr/bin/env bash
 #set -x
 #
 # repmgr_vip.sh
@@ -7,7 +7,7 @@
   
 # Used by EDB repmgr  to assign vips to Network Devices
 #
-# Version : 0.2 
+# Version : 0.3 
 
 
 generic_vars() {
