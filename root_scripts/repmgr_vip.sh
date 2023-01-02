@@ -9,36 +9,9 @@
 #
 # Version : 0.3 
 
+source ./opt/psql/common/common_functions.sh
 
-generic_vars() {
-my_pid=$$
-script_name=$(basename ${0%.*})
-script_full=$(basename $0)
-script_date=$(date +%Y%m%d)
-inst_dir=/psql
-inst_home=${inst_dir}/home
-dba_dir=${inst_dir}/dba
-dba_log_dir=${dba_dir}/logs
-dba_tmp_dir=${dba_dir}/tmp
 
-if  [ ! -e  $dba_log_dir ]; then
-  echo "Error - Script Abort - No log directory $dba_log_dir present "
-  exit 2
-fi
-
-if  [ ! -e  $dba_tmp_dir ]; then
-  echo "Error - Script Abort - No tmp directory $dba_tmp_dir present! "
-  exit 2
-fi
-
-log_main_name=${script_name}.${script_date}.log
-log_main=${dba_log_dir}/${log_main_name}
-history_log=${dba_log_dir}/postgres_history.log
-touch $log_main
-touch $history_log
-chown postgres:postgres $log_main
-chown postgres:postgres $history_log
-}
 
 usage() {
 echo "Usage:" 
@@ -47,26 +20,6 @@ exit 99
 }
 
 
-write_log() {
-dt=$(date +%Y-%m-%d-%H-%M.%S)
-$echoe "$dt - ${my_pid}\t-$1" >> ${log_main}
-if [ "$verbose" = 'Y' ];  then
-  $echoe "$dt - ${my_pid}\t-$1"
-fi
-}
-
-write_history_log() {
-dt=$(date "+%a %d %b %Y %H:%M:%S")
-$echoe "$dt ${my_pid}\t: $1" >>${history_log}
-}
-
-abort() {
-   write_log "$2"
-   write_log "${script_name} ended abnormally"
-   write_history_log "${script_full} for instance ${inst} - ended abbormally"
-   echo $2
-   exit $1
-}
 
 
 
