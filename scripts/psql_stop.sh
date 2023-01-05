@@ -14,6 +14,7 @@ myhost=$(hostname -s)
 returncode=0
 label=""
 type1="custom"
+configfile=""
 
 while getopts l:c: value
 do 
@@ -29,8 +30,9 @@ generic_vars
 
 if [ "$configfile" = "" ]; then
   type1="default"
-  configfile="${inst_home}/cfg/vipmanager.default.cfg"
+  configfile="${inst_home}/cfg/psql_stopstart.cfg"
 fi
+
 if [ ! -e ${configfile} ] ; then 
    abort 9 "Error - Unable to locate default config file ${configfile}"
 fi
@@ -40,9 +42,9 @@ write_log "-------------------------------------------------------------------"
 write_log "${script_name} started on hostname ${myhost}"
 write_log "Parameters:"
 write_log " $* "
-write_log "Called from argument with label(-l) ${label} ."
+write_log "Script called with argument with label(-l) ${label} ."
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
-sudo /opt/psql/root_scripts/repmgr_vip.sh -o delete
+sudo /opt/psql/root_scripts/repmgr_vip.sh -o delete -v n -l "${label}"
 sudo systemctl stop postgresql-11
 returncode=$?
 if [ $returncode = 0 ]; then

@@ -21,29 +21,6 @@ exit 99
 
 
 
-
-
-validate_netmask () {
-    local n_masks=(${1//./ })
-    [ "${#n_masks[@]}" -ne 4 ] && return 1
-    for i in ${1//./ }; do
-        bits=$(echo "obase=2;ibase=10;$i" | bc)
-        pre=$((8-${#bits}))
-        if [ "$bits" = 0 ]; then
-            zeros=00000000
-        elif [ "$pre" -gt 0 ]; then
-            zeros=$(for ((i=1;i<=$pre;i++)); do echo -n 0; done)
-        fi
-        b_mask=$b_mask$zeros$bits
-            unset zeros
-    done
-    if [ $b_mask = ${b_mask%%0*}${b_mask##*1} ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 validate_ipaddr() {
  local ldevice=$1
  local lipaddr=$2
@@ -89,6 +66,7 @@ primaryvip=""
 netmask=""
 device=""
 verbose="Y"
+label=""
 returncode=0
 node="None Specified"
 
@@ -100,7 +78,7 @@ esac
 
 # ifconfig ens3:0 inet 192.168.0.35 netmask 255.255.255.0
 
-while getopts o:d:c:i:n:m:v: value
+while getopts o:d:c:i:n:m:v:l: value
 do 
 case $value in
 c) configfile=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
@@ -110,6 +88,7 @@ i) primaryvip=$(echo "$OPTARG") ;;
 m) netmask=$(echo "$OPTARG") ;;
 n) node=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 v) verbose=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
+l) label=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 *) usage ;;
 esac
 done  
@@ -148,6 +127,7 @@ write_log "${script_name} started "
 write_log "Parameters:"
 write_log " $* "
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
+write_log "Script called with argument with label(-l) ${label} ."
 
 if [ "$device" = "" ]; then
   grep -i "^DEVICE" ${configfile} >/dev/null
