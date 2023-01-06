@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #set -x
 
-source . /opt/psql/common/common_functions.sh
+source /opt/psql/common/common_functions.sh
 
 usage() {
 echo "Usage:" 
