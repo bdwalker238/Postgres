@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+#EUID is a standard bash environment variable.
+check_root () {
+  if [[ $EUID -ne 0 ]]; then
+    echo "Error - This script must be run as root." 
+    exit 1
+  fi
+}
+
+
 generic_vars() {
 my_pid=$$
 script_name=$(basename ${0%.*})

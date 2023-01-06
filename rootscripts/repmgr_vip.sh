@@ -9,7 +9,7 @@
 #
 # Version : 0.3 
 
-source ./opt/psql/common/common_functions.sh
+source /opt/psql/common/common_functions.sh
 
 
 
@@ -102,6 +102,8 @@ case $verbose in
         exit 1
     ;;
 esac
+
+check_root
 
 generic_vars
 
