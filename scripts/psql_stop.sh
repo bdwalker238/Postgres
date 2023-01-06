@@ -12,16 +12,17 @@ exit 99
 
 myhost=$(hostname -s)
 returncode=0
-label=""
+tag="None Provided"
 type1="custom"
 configfile=""
 
-while getopts l:c: value
+which_os
+
+while getopts c:t: value
 do 
 case $value in
-l) label=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
+t) tag=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 c) configfile=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
-
 *) usage ;;
 esac
 done  
@@ -34,7 +35,7 @@ if [ "$configfile" = "" ]; then
 fi
 
 if [ ! -e ${configfile} ] ; then 
-   abort 9 "Error - Unable to locate default config file ${configfile}"
+   abort 9 "Error - Unable to locate default config file ${configfile}."
 fi
 
 write_history_log "START:${script_full} for Postgres Database - started. "
@@ -42,9 +43,9 @@ write_log "-------------------------------------------------------------------"
 write_log "${script_name} started on hostname ${myhost}"
 write_log "Parameters:"
 write_log " $* "
-write_log "Script called with argument with label(-l) ${label} ."
+write_log "Script called with tag ${tag} ."
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
-sudo /opt/psql/root_scripts/repmgr_vip.sh -o delete -v n -l "${label}"
+sudo /opt/psql/rootscripts/repmgr_vip.sh -o delete -v n -t "${tag}"
 sudo systemctl stop postgresql-11
 returncode=$?
 if [ $returncode = 0 ]; then
@@ -55,5 +56,4 @@ else
   write_history_log "FINISHED:${script_full}  - ended unsuccessfully."
 fi
 
-
-return $returncode
+exit $returncode

@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
+#
+#
+# commonfunctions.sh  .  Should have permissions 644
 
-#EUID is a standard bash environment variable.
-check_root () {
-  if [[ $EUID -ne 0 ]]; then
-    echo "Error - This script must be run as root." 
-    exit 1
-  fi
+ 
+echoe=""
+
+which_os() {
+  case $(uname) in 
+  Linux ) echoe="echo -e"	;;
+  AIX)	echoe="echo" ;;
+  *)	echoe="" ;;
+  esac
 }
-
 
 generic_vars() {
 my_pid=$$
@@ -57,7 +62,7 @@ $echoe "$dt ${my_pid}\t: $1" >>${history_log}
 abort() {
    write_log "$2"
    write_log "${script_name} ended abnormally"
-   write_history_log "${script_full} for instance ${inst} - ended abbormally"
+   write_history_log "${script_full} for Postgres - ended abbormally"
    echo $2
    exit $1
 }
