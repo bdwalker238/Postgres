@@ -66,19 +66,15 @@ primaryvip=""
 netmask=""
 device=""
 verbose="Y"
-label=""
+tag="None Provided"
 returncode=0
 node="None Specified"
 
-case $(uname) in 
-Linux ) echoe="echo -e"	;;
-AIX)	echoe="echo" ;;
-*)	echoe="" ;;
-esac
+which_os 
 
 # ifconfig ens3:0 inet 192.168.0.35 netmask 255.255.255.0
 
-while getopts o:d:c:i:n:m:v:l: value
+while getopts o:d:c:i:n:m:v:t: value
 do 
 case $value in
 c) configfile=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
@@ -88,7 +84,7 @@ i) primaryvip=$(echo "$OPTARG") ;;
 m) netmask=$(echo "$OPTARG") ;;
 n) node=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 v) verbose=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
-l) label=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
+t) tag=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 *) usage ;;
 esac
 done  
@@ -102,8 +98,6 @@ case $verbose in
         exit 1
     ;;
 esac
-
-check_root
 
 generic_vars
 
@@ -129,7 +123,7 @@ write_log "${script_name} started "
 write_log "Parameters:"
 write_log " $* "
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
-write_log "Script called with argument with label(-l) ${label} ."
+write_log "Script called with tag ${tag} ."
 
 if [ "$device" = "" ]; then
   grep -i "^DEVICE" ${configfile} >/dev/null
