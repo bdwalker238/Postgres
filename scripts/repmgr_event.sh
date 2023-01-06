@@ -1,50 +1,13 @@
 #!/bin/bash
 #set -x
 
+source /opt/psql/common/common_functions.sh 
 
 usage() {
 
 exit 99
 }
 
-
-write_log() {
-dt=`date +%Y-%m-%d-%H-%M.%S`
-$echoe "$dt - ${my_pid}\t-$1" >> ${log_main}
-$echoe "$dt - ${my_pid}\t-$1"
-}
-
-write_history_log() {
-dt=`date "+%a %d %b %Y %H:%M:%S"`
-$echoe "$dt ${my_pid}\t: $1" >>${history_log}
-}
-
-abort() {
-   write_log "$2"
-   write_log "${script_name} ended abnormally"
-   write_history_log "${script_full} for instance ${inst} - ended abbormally"
-   echo $2
-   exit $1
-}
-
-generic_vars() {
-my_pid=$$
-script_name=$(basename ${0%.*})
-script_full=$(basename $0)
-script_date=$(date +%Y%m%d)
-inst_dir=/psql
-inst_home=${inst_dir}/home
-dba_dir=${inst_dir}/dba
-dba_log_dir=${dba_dir}/logs
-log_main_name=${script_name}.${script_date}.log
-log_main=${dba_log_dir}/${log_main_name}
-history_log=${dba_log_dir}/postgres_history.log
-touch $log_main
-touch $history_log
-chown postgres:postgres $log_main
-chown postgres:postgres $history_log
-#DBNAME=`echo ${DBNAME} |tr '[a-z]' '[A-Z]'`
-}
 
 configfile=""
 detail=""
@@ -58,11 +21,7 @@ conninfo=""
 sprimary=""
 event=""
 
-case $(uname) in 
-Linux ) echoe="echo -e"	;;
-AIX)	echoe="echo" ;;
-*)	echoe="" ;;
-esac
+which_os 
 
 # ifconfig ens3:0 inet 192.168.0.35 netmask 255.255.255.0
 
