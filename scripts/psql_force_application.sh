@@ -71,7 +71,7 @@ ALL)
         out=$(psql -d postgres -qAtXw -c "copy (${sql_to_kill_pid}) to stdout")
         rc=$?
         if [ $rc -eq 0 ]; then
-	 write_log "Successfully killed ${pid}"
+	      write_log "Successfully killed ${pid}."
         fi
     fi
     ;;	
