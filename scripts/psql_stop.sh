@@ -12,7 +12,7 @@ exit 99
 
 myhost=$(hostname -s)
 returncode=0
-tag="Has not been provided in command line arguments."
+tag="Has not been provided in command line arguments"
 type1="custom"
 configfile=""
 verbose="N"
@@ -44,7 +44,7 @@ write_log "-------------------------------------------------------------------"
 write_log "${script_name} started on hostname ${myhost}"
 write_log "Parameters:"
 write_log " $* "
-write_log "Script called with tag(it) argument : ${tag} ."
+write_log "Script called with tag(it) argument : ${tag}."
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
 write_log " "
 write_log "Issue command 'sudo /opt/psql/rootscripts/repmgr_vip.sh -o delete -v n -t "${tag}"' "
