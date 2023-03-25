@@ -1,0 +1,18 @@
+#!/usr/bin/env bash 
+ 
+VIP=10.0.30.50 
+IFACE=eth0 
+PATH=/usr/pgsql-12/bin:$PATH 
+VIP_CONF="${VIP}/32 dev ${IFACE} label ${IFACE}:pg" 
+ 
+sudo /sbin/ip addr del ${VIP_CONF} 
+ 
+psql -c "UPDATE pg_database SET datconnlimit=0" postgres  
+
+# The script continues by manipulating the pg_database PostgreSQL catalog table and setting the datconnlimit column to 0 for all databases
+ 
+sudo systemctl stop postgresql@12-main 
+
+#UPDATE pg_database SET datconnlimit=-1; 
+
+exit 0 
