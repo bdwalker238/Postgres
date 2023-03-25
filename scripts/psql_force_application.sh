@@ -14,22 +14,30 @@ returncode=0
 tag="Has not been provided in command line arguments"
 type1="custom"
 configfile=""
+terminatestring="pg_cancel_backend"
 pid=""
 zero=0
+pidmessage1=""
+dbmessage1="About to force all applications in database ${database} gracefully."
+dbmessage2="Forced off all applications gracefully connections against ${database} successfully."
+force="no"
 psqlout=""
 verbose="Y"
 
 which_os
 
-while getopts c:t:p: value
+while getopts c:t:p:f: value
 do
 case $value in
 t) tag=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 c) configfile=$(echo "$OPTARG") ;;
 p) pid=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
+f) force=$(echo "$OPTARG" |tr '[a-z]' '[A-Z]') ;;
 *) usage ;;
 esac
 done
+
+pidmessage1="Successfully killed ${pid} gracefully."
 
 generic_vars
 
@@ -51,13 +59,22 @@ write_log "Script called with tag(-t) argumnet: ${tag}."
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
 write_log " "
 
+if [ "$force" = "YES" ]; then
+    terminatestring="pg_terminate_backend"
+    dbmessage1="About to force all applications in database ${database}."
+    dbmessage2="Forced off all applications connections against ${database} successfully."
+    pidmessage1="Successfully killed ${pid}."
+fi
+
+
+
 case $pid in
 ALL)
     psql -d postgres -qAtXw -c "copy (SELECT datname FROM pg_database) to stdout" |egrep -v -e postgres -e template -e repmgr |while read database; do
-       write_log "About to force all applications in database ${database}."
-       kill_all_sql="SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '${database}' AND pid <> pg_backend_pid()" 
+       write_log "${dbmessage1}"
+       kill_all_sql="SELECT ${terminatestring}(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '${database}' AND pid <> pg_backend_pid()" 
        psql -d postgres -qAtXw -c "copy ($kill_all_sql) to stdout" 
-       write_log "Forced all applications connections against ${database} successfully."
+       write_log "${dbmessage2}"
     done
     ;;
 (*[0-9]*)
@@ -67,11 +84,11 @@ ALL)
     if [ $psqlout -eq $zero ]; then
        write_log "No such process as ${pid}."
     else
-        sql_to_kill_pid="select pg_terminate_backend(pid) from pg_stat_activity where pid = '${pid}'"
+        sql_to_kill_pid="select ${terminatestring}(pid) from pg_stat_activity where pid = '${pid}'"
         out=$(psql -d postgres -qAtXw -c "copy (${sql_to_kill_pid}) to stdout")
         rc=$?
         if [ $rc -eq 0 ]; then
-	      write_log "Successfully killed ${pid}."
+	      write_log "${pidmessage1}"
         fi
     fi
     ;;	

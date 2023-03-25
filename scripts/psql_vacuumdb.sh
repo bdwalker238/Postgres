@@ -19,7 +19,7 @@ echo "exclude_tabs = Tables to exclude. Future Use."
 echo "exclude_schema = Schemas to exclude. Future Use."
 echo "reattempt_codes. List errorcodes to ignore. Possible Future Use"
 echo "vacuumdb_cmd = Full path to vacuumdb command."
-echo "mode=--analyze/--freeze/--analyze-in-stages.  Optional"
+echo "mode=-z/-Z/-F/--analyze-in-stages.  Optional."
 echo "database = Database name to run vacuumdb/vacuum commands. Default is all if not specfied in config file."
 echo "njobs = Number of jobs to run. Default is 2 if not specfied in config file."
 echo "parallel_workers = Postgres 13+ only. parallel_workers = specify the number of parallel workers for parallel vacuum. Default None"
@@ -138,7 +138,7 @@ njobs=2
 vacuumdbstring=""
 skiplocked="N"
 parallel_workers=""
-vacuumdb_cmd=""
+vacuumdb_cmd="vacuumdb"
 min_mxid_age=-1
 min_xid_age=-1
 database=""
@@ -238,12 +238,12 @@ else
         min_xid_age="--min-xid-age ${tmpmin}"
 fi
 
-if [ $njobs -gt 1 ] ; then
-        njobs="-j=2"
+if [ $njobs -eq 1 ] ; then
+        njobs=""
 else
-       njobs=""
-       # tmpjobs=$njobs
-       # njobs="-j=${tmpjobs}"
+       #njobs=""
+       tmpjobs=$njobs
+       njobs="-j ${tmpjobs}"
 fi
 
 if [ "${database}" = "all" ]; then
@@ -252,7 +252,7 @@ else
    tmpdb=$database
    database="--dbname=$tmpdb"
 fi
-vacuumdbstring="vacuumdb ${mode} ${njobs} ${min_mxid_age} ${min_xid_age} ${skiplocked} ${vacuumverbose} ${echo} ${password} ${database}"
+vacuumdbstring="${vacuumdb_cmd} ${mode} ${njobs} ${min_mxid_age} ${min_xid_age} ${skiplocked} ${vacuumverbose} ${echo} ${password} ${database}"
 vacuumdbstring=$(echo ${vacuumdbstring} |sed 's/     / /g'|sed 's/    / /g'|sed 's/   / /g'|sed 's/  / /g')
 
 #echo "DEBUG $vacuumdbstring" 
@@ -286,7 +286,7 @@ if wait $vacuumpid; then
 	done
     write_log ""
     write_log "Command '${vacuumdbstring}' completed successfully."
-	rm -f ${scriptout}
+    rm -f ${scriptout}
 else
    rc=$?
    k=$(cat ${scriptout} | wc -l |bc)
@@ -297,7 +297,7 @@ else
     fi
 	done
 	rm -f ${scriptout}
-	abort ${rc} "Error - with command 'vacuumdbstring'."
+	abort ${rc} "Error - with command '${vacuumdbstring}'."
 fi	
 log_thresh_min=$(expr $hlog_thresh \* 24)
 log_thresh_min=$(expr $log_thresh_min \* 60)
