@@ -10,7 +10,6 @@ exit 99
 }
 
 myhost=$(hostname -s)
-returncode=0
 tag="Has not been provided in command line arguments"
 type1="custom"
 configfile=""
