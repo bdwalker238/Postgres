@@ -69,7 +69,7 @@ fi
 
 case $pid in
 ALL)
-    psql -d postgres -qAtXw -c "copy (SELECT datname FROM pg_database where datname NOT in ('repmgr','template0','template1')) to stdout" |egrep -v -e postgres -e template -e repmgr |while read database; do
+    psql -d postgres -qAtXw -c "copy (SELECT datname FROM pg_database where datname NOT in ('repmgr','template0','template1')) to stdout" |while read database; do
        write_log "${dbmessage1}"
        kill_all_sql="SELECT ${terminatestring}(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '${database}' AND pid <> pg_backend_pid()" 
        psql -d postgres -qAtXw -c "copy ($kill_all_sql) to stdout" 
