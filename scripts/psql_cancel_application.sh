@@ -94,4 +94,5 @@ ALL)
 *)  ;;
 esac
 write_log "Script ${script_name} completed successfully."
+write_history_log "FINISHED:${script_full} for Postgres Database."
 exit 0
