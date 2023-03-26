@@ -17,8 +17,8 @@ terminatestring="pg_cancel_backend"
 pid=""
 zero=0
 pidmessage1=""
-dbmessage1="About to force all applications in database ${database} gracefully."
-dbmessage2="Forced off all applications gracefully connections against ${database} successfully."
+dbmessage1="About to force all applications with ${terminatestring}."
+dbmessage2="Forced off all applications connections successfully with $terminatestring."
 force="no"
 psqlout=""
 verbose="Y"
@@ -42,14 +42,14 @@ generic_vars
 
 if [ "$configfile" = "" ]; then
   type1="default"
-  configfile="${inst_home}/cfg/psql_force.cfg"
+  configfile="${inst_home}/cfg/psql_cancel.cfg"
 fi
 
 if [ ! -e ${configfile} ] ; then
    abort 9 "Error - Unable to locate config file ${configfile}."
 fi
 
-write_history_log "START:${script_full} for Postgres Database - started. "
+write_history_log "START:${script_full} for Postgres Database - started."
 write_log "-------------------------------------------------------------------"
 write_log "${script_name} started on hostname ${myhost}"
 write_log "Parameters:"
@@ -60,8 +60,8 @@ write_log " "
 
 if [ "$force" = "YES" ]; then
     terminatestring="pg_terminate_backend"
-    dbmessage1="About to force all applications in database ${database}."
-    dbmessage2="Forced off all applications connections against ${database} successfully."
+    dbmessage1="About to force all applications with ${terminatestring}."
+    dbmessage2="Forced off all applications connections successfully with $terminatestring."
     pidmessage1="Successfully killed ${pid}."
 fi
 
@@ -69,7 +69,7 @@ fi
 
 case $pid in
 ALL)
-    psql -d postgres -qAtXw -c "copy (SELECT datname FROM pg_database) to stdout" |egrep -v -e postgres -e template -e repmgr |while read database; do
+    psql -d postgres -qAtXw -c "copy (SELECT datname FROM pg_database where datname NOT in ('repmgr','template0','template1')) to stdout" |egrep -v -e postgres -e template -e repmgr |while read database; do
        write_log "${dbmessage1}"
        kill_all_sql="SELECT ${terminatestring}(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '${database}' AND pid <> pg_backend_pid()" 
        psql -d postgres -qAtXw -c "copy ($kill_all_sql) to stdout" 
