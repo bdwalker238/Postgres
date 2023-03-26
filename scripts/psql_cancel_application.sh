@@ -54,7 +54,7 @@ write_log "-------------------------------------------------------------------"
 write_log "${script_name} started on hostname ${myhost}"
 write_log "Parameters:"
 write_log " $* "
-write_log "Script called with tag(-t) argumnet: ${tag}."
+write_log "Script called with tag(-t) argument: ${tag}."
 write_log "Read ${type1} Config file ${configfile} for configuration variables."
 write_log " "
 
