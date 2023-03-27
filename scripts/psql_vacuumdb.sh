@@ -133,6 +133,7 @@ exclude_schemas=""
 reattempt_codes=""
 tables=""
 cut_off=""
+history_lines=100
 hlog_thresh=16
 njobs=2
 vacuumdbstring=""
@@ -310,7 +311,18 @@ else
   rm -f ${tempfile1}
   done
 fi  
-
+write_log "Manage the history file ${history_log}."
+if test -r ${history_log} && head -n 1 ${history_log} >/dev/null ; then
+	nolines=$(wc -l ${history_log} )| awk ' print $1 }')
+	if [ "$nolines" -gt "$history_lines" ]; then
+		write_log "Truncating first 10 lines of file ${history_log}."
+		sed -i '1,10d' ${history_log}
+	else
+	   write_log "Performed no action against history file ${history_log}."
+	fi
+else
+	abort 62 "Error - Unexpected error reading file ${history_log}."
+fi
 write_log "Script Completed Successfully"
-write_history_log "FINISHED Script Successfully - ${script_full}" 
+write_history_log "FINISHED Script Successfully - ${script_full}." 
 exit 0
