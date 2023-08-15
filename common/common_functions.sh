@@ -15,6 +15,7 @@ which_os() {
 }
 
 generic_vars() {
+
 my_pid=$$
 script_name=$(basename ${0%.*})
 script_full=$(basename $0)
@@ -45,6 +46,7 @@ chown postgres:postgres $history_log
 chmod 644 $log_main
 chmod 644 $history_log
 }
+
 
 write_log() {
 dt=$(date +%Y-%m-%d-%H-%M.%S)
