@@ -198,7 +198,7 @@ write_log "Checking if database name is valid - "
 
 if [ "${database}" = "" ]; then
    abort 3 "Error - Your must specify a database name!"
-elif [ "${database}" = "all"]; then
+elif [ "${database}" = "all" ]; then
   write_log "Skipping database name check, as value is set to 'all'"
 else
   psql -qAtX -c "copy (SELECT datname FROM pg_database) to stdout" >/dev/null
@@ -368,7 +368,7 @@ else
 fi	
 log_thresh_min=$(expr $hlog_thresh \* 24)
 log_thresh_min=$(expr $log_thresh_min \* 60)
-tmplist=$(find ${dba_log_dir}/${script_name}* -type f --mmin +${log_thresh_min})
+tmplist=$(find ${dba_log_dir}/${script_name}* -type f -mmin +${log_thresh_min})
 if [ "${tmplist}" != "" ]; then
   write_log "There are no left over log files in ${dba_log_dir} from previous scripts runs to delete."
 else
@@ -379,7 +379,7 @@ else
 fi  
 write_log "Manage the history file ${history_log}."
 if test -r ${history_log} && head -n 1 ${history_log} >/dev/null ; then
-	nolines=$(wc -l ${history_log} )| awk ' print $1 }')
+	nolines=$(wc -l ${history_log} | awk ' print $1 }')
 	if [ "$nolines" -gt "$history_lines" ]; then
 		write_log "Truncating first 10 lines of file ${history_log}."
 		sed -i '1,10d' ${history_log}
