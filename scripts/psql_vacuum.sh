@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #set -x
-# 17/2/2024 V1
 
 source /opt/psql/common/common_functions.sh
 
@@ -20,7 +19,7 @@ echo "exclude_tabs = Tables to exclude. Future Use."
 echo "exclude_schema = Schemas to exclude. Future Use."
 echo "reattempt_codes. List errorcodes to ignore. Possible Future Use"
 echo "vacuumdb_cmd = Full path to vacuumdb command."
-echo "mode=--analyze/--freeze/--analyze-in-stages.  Optional"
+echo "mode=-z/-Z/-F/--analyze-in-stages.  Optional."
 echo "database = Database name to run vacuumdb/vacuum commands. Default is all if not specfied in config file."
 echo "njobs = Number of jobs to run. Default is 2 if not specfied in config file."
 echo "parallel_workers = Postgres 13+ only. parallel_workers = specify the number of parallel workers for parallel vacuum. Default None"
@@ -67,14 +66,11 @@ read_config_file() {
 	  	grep -i "^DATABASE" ${myconfigfile} >/dev/null
 	  	rc=$?
 	  	if [ $rc -eq 0 ]; then
-             		database=$(grep -i "^DATABASE" ${myconfigfile}|  cut -f2 -d= |tr -d '"' | awk ' {print $1} ' |tr [A-Z] [a-z])
+            database=$(grep -i "^DATABASE" ${myconfigfile}|  cut -f2 -d= |tr -d '"' | awk ' {print $1} ' |tr [A-Z] [a-z])
 			write_log "Read Config file - database = '${database}'."
-		else
-		   write_log "Using default setting database = 'all'"
-                   database="all"
 		fi
 	  else
-               write_log "Setting variable database from command argument value '$database'." 
+               write_log "Setting variable database using argument value '$database'." 
 	  fi 
 	  grep -i "^MODE" ${myconfigfile} >/dev/null
 	  rc=$?
@@ -124,22 +120,29 @@ read_config_file() {
 fi
 }
 
-ignore_errors="YES"
+ignore_errors="TRUE"
+enddate=""
+tab_tag=""
+tab=""
 verbose="Y"
 vacuumverbose="yes"
-max_duration=120
-tab_max_duration=30
+max_duration=""
+tab_max_duration=""
 exclude_tabs=""
-exclude_schemas=""
+exclude_schema=""
+include_tabs=""
+include_schema=""
+
 reattempt_codes=""
 tables=""
 cut_off=""
+history_lines=100
 hlog_thresh=16
 njobs=2
 vacuumdbstring=""
 skiplocked="N"
 parallel_workers=""
-vacuumdb_cmd=""
+vacuumdb_cmd="vacuumdb"
 min_mxid_age=-1
 min_xid_age=-1
 database=""
@@ -152,6 +155,7 @@ returncode=0
 tag="Has not been provided in command line arguments"
 type1="custom"
 configfile=""
+script_start=$(perl -e 'print time;')
 
 which_os
 
@@ -192,7 +196,9 @@ write_log "Finish reading Config file."
 
 write_log "Checking if database name is valid - "
 
-if [ "${database}" = "all" ]; then
+if [ "${database}" = "" ]; then
+   abort 3 "Error - Your must specify a database name!"
+elif [ "${database}" = "all" ]; then
   write_log "Skipping database name check, as value is set to 'all'"
 else
   psql -qAtX -c "copy (SELECT datname FROM pg_database) to stdout" >/dev/null
@@ -201,7 +207,7 @@ else
 	  psql -qAtX -c "copy (SELECT datname FROM pg_database) to stdout"|grep ${database} >/dev/null
 	  rc=$?
 	  if [ $rc -eq 0 ]; then
-		  write_log "Database name '${database}' is a valid name."
+		  write_log "Database name '${database}' is a valid database name."
 	  else
 	          abort $rc "Error - Unable to find database '${database}'. Check database name is valid!"
 	  fi
@@ -209,13 +215,67 @@ else
 	 abort $rc "Error - Unable to connect to Postgres."
    fi
 fi
-if [ "${vacuumverbose}" = "empty" ] ; then
-	vacuumverbose=""
-elif [ "${vacuumverbose}" = "yes" ]; then
-	vacuumverbose="--verbose"
+
+if [ "$max_duration" = "" ]; then
+	max_duration=3600
+	tag="default"
 else
-	abort 50 "Error The value of variable verbose = $verbose is incorrect!"
+	max_duration=$(echo "$max_duration * 60"|bc)
+fi	
+
+if [ "$tab_max_duration" = "" ] ; then
+	tab_max_duration=$(echo "$max_duration / 2"|bc)
+	tab_tag="default"
+else
+	tab_max_duration=$(echo "$tab_max_duration * 60"|bc)
+fi	
+write_log "Issue script with $tag maximum script duration of $max_duration seconds."
+write_log "Issue script with $tab_tag maximum script duration of $max_duration seconds."
+
+if [ "$ignore_errors" = TRUE ] ; then
+	write_log "Issuing script with IGNORE_ERRORS flag set to true."
 fi
+
+if [[ "$include_tabs" != "" || "$include_schema" != "" ]]; then
+   write_log "Include list detected."
+fi
+
+if [[ "$exclude_tabs" != "" || "$exclude_schema" != "" ]]; then
+   write_log "Exclusion list detected."
+fi
+
+# Add a later date
+#if [ "$max_duration" != "" ]; then
+#   current_time=$(perl -e 'print time;')
+#   duration=$(expr $current_time - $script_start)
+#   if [ $duration -ge $max_duration ]; then
+#     write_log "Maxium duration breached, halting vacuuming."
+#	 break
+#   fi
+#fi
+#if [ "$cut_off" != "" ] ; then
+#  timecmp=$(date +H%M |xargs expr)
+ # timechk=$(echo "${cut_off}" |awk -F':' '{print $1 $2 }' xargs expr)
+#  if [ $timechk -lt $timecmp ] ; then
+#    enddate=$(date -d "tomorow $cut_off" +%s)
+#  else
+#	enddate=$(date -d "today $cut_off" +%s)
+#fi
+#currenttime=$(date '+%s')
+#if [ $currenttime -ge $enddate  ] ; then
+# write_log "Maximum duration breached, halting vacuuming."
+# break
+#fi
+#
+#if [ "$tab_max_duration" != "" ] ; then
+#	current_time=$(perl -e 'print time;')
+#	duration=$(expr $current_time - $script_start)
+#	if [ $duration -ge $tab_max_duration ] ; then
+#      write_log "Maximum duration breached, halting table vacuuming."
+#     break
+#	fi
+
+
 
 if [ "${skiplocked}" = "N" ]; then
 	skiplocked=""
@@ -239,12 +299,12 @@ else
         min_xid_age="--min-xid-age ${tmpmin}"
 fi
 
-if [ $njobs -gt 1 ] ; then
-        njobs="-j=2"
+if [ $njobs -eq 1 ] ; then
+        njobs=""
 else
-       njobs=""
-       # tmpjobs=$njobs
-       # njobs="-j=${tmpjobs}"
+       #njobs=""
+       tmpjobs=$njobs
+       njobs="-j ${tmpjobs}"
 fi
 
 if [ "${database}" = "all" ]; then
@@ -253,7 +313,7 @@ else
    tmpdb=$database
    database="--dbname=$tmpdb"
 fi
-vacuumdbstring="vacuumdb ${mode} ${njobs} ${min_mxid_age} ${min_xid_age} ${skiplocked} ${vacuumverbose} ${echo} ${password} ${database}"
+vacuumdbstring="${vacuumdb_cmd} ${mode} ${njobs} ${min_mxid_age} ${min_xid_age} ${skiplocked} ${vacuumverbose} ${echo} ${password} ${database}"
 vacuumdbstring=$(echo ${vacuumdbstring} |sed 's/     / /g'|sed 's/    / /g'|sed 's/   / /g'|sed 's/  / /g')
 
 #echo "DEBUG $vacuumdbstring" 
@@ -298,11 +358,11 @@ else
     fi
 	done
 	rm -f ${scriptout}
-	abort ${rc} "Error - with command 'vacuumdbstring'."
+	abort ${rc} "Error - with command '${vacuumdbstring}'."
 fi	
 log_thresh_min=$(expr $hlog_thresh \* 24)
 log_thresh_min=$(expr $log_thresh_min \* 60)
-tmplist=$(find ${dba_log_dir}/${script_name}* -type f --mmin +${log_thresh_min})
+tmplist=$(find ${dba_log_dir}/${script_name}* -type f -mmin +${log_thresh_min})
 if [ "${tmplist}" != "" ]; then
   write_log "There are no left over log files in ${dba_log_dir} from previous scripts runs to delete."
 else
@@ -311,7 +371,18 @@ else
   rm -f ${tempfile1}
   done
 fi  
-
-write_log "Script Completed Successfully."
+write_log "Manage the history file ${history_log}."
+if test -r ${history_log} && head -n 1 ${history_log} >/dev/null ; then
+	nolines=$(wc -l ${history_log} | awk ' print $1 }')
+	if [ "$nolines" -gt "$history_lines" ]; then
+		write_log "Truncating first 10 lines of file ${history_log}."
+		sed -i '1,10d' ${history_log}
+	else
+	   write_log "Performed no action against history file ${history_log}."
+	fi
+else
+	abort 62 "Error - Unexpected error reading file ${history_log}."
+fi
+write_log "Script Completed Successfully"
 write_history_log "FINISHED Script Successfully - ${script_full}." 
 exit 0
